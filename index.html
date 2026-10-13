@@ -8,6 +8,8 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
   <div id="root"></div>
@@ -15,51 +17,28 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
 
+    // Подключение к Supabase
+    const SUPABASE_URL = 'https://jseoafrkxavxoiektehh.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_w4Uz18PUKYny3AqvPYqPeg_2Zg_W6BV';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     const CLIENT_STATUSES = ['Лид', 'В работе', 'Сделка заключена', 'Отказ'];
     const DEPARTMENTS = ['Руководство', 'Отдел продаж', 'Отдел аккаунтинга'];
 
-    const DEFAULT_TEAM = [
-      { id: 't1', name: 'Максим', role: 'Руководитель', department: 'Руководство', phone: '+7 (999) 100-01-01', birthCity: 'Москва', birthDate: '1988-04-12', photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80' },
-      { id: 't2', name: 'Сергей', role: 'Руководитель', department: 'Руководство', phone: '+7 (999) 100-02-02', birthCity: 'Санкт-Петербург', birthDate: '1987-09-20', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80' },
-      { id: 't3', name: 'Павел', role: 'Менеджер продаж', department: 'Отдел продаж', phone: '+7 (999) 200-03-03', birthCity: 'Казань', birthDate: '1995-02-14', photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80' },
-      { id: 't4', name: 'Василий', role: 'Менеджер продаж', department: 'Отдел продаж', phone: '+7 (999) 200-04-04', birthCity: 'Екатеринбург', birthDate: '1996-07-08', photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80' },
-      { id: 't5', name: 'Александра', role: 'Аккаунт-менеджер', department: 'Отдел аккаунтинга', phone: '+7 (999) 300-05-05', birthCity: 'Новосибирск', birthDate: '1997-11-25', photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80' },
-      { id: 't6', name: 'Игорь', role: 'Аккаунт-менеджер', department: 'Отдел аккаунтинга', phone: '+7 (999) 300-06-06', birthCity: 'Самара', birthDate: '1994-05-19', photo: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80' }
-    ];
-
-    const DEFAULT_CLIENTS = [
-      { id: '1', name: 'Иван Иванов (ИП)', phone: '+7 (999) 111-22-33', email: 'ivanov@gmail.com', status: 'В работе', notes: ['12 Окт: Созвон, обсудили ТЗ', '10 Окт: Добавлен контакт'] },
-      { id: '2', name: 'ИП Кузнецов', phone: '+7 (999) 444-55-66', email: 'kuznetsov@ya.ru', status: 'Лид', notes: ['9 Окт: Заявка с сайта'] },
-      { id: '3', профессионал: 'ООО "Вектор"', name: 'ООО "Вектор"', phone: '+7 (495) 777-88-99', email: 'info@vektor.ru', status: 'В работе', notes: ['11 Окт: Отправили договор'] }
-    ];
-
-    const DEFAULT_TASKS = [
-      { id: '101', type: 'client', clientId: '1', title: 'Отправить КП', tag: 'Завтра', assignee: 'Отдел продаж', createdBy: 'Максим', done: false },
-      { id: '102', type: 'client', clientId: '1', title: 'Согласовать договор', tag: 'Срочно', assignee: 'Александра', createdBy: 'Сергей', done: false },
-      { id: '103', type: 'team', clientId: null, title: 'Обновить прайс-лист на услуги', tag: 'Команда', assignee: 'Руководители', createdBy: 'Максим', done: false },
-      { id: '104', type: 'team', clientId: null, title: 'Провести планерку отделов', tag: 'Команда', assignee: 'Все', createdBy: 'Сергей', done: false }
-    ];
-
-    const ASSIGNEE_OPTIONS = [
-      'Все',
-      'Отдел продаж',
-      'Отдел аккаунтинга',
-      'Руководители',
-      'Максим',
-      'Сергей',
-      'Павел',
-      'Василий',
-      'Александра',
-      'Игорь'
-    ];
-
     function App() {
-      const [team, setTeam] = useState(() => JSON.parse(localStorage.getItem('crm_team') || JSON.stringify(DEFAULT_TEAM)));
-      const [clients, setClients] = useState(() => JSON.parse(localStorage.getItem('crm_clients') || JSON.stringify(DEFAULT_CLIENTS)));
-      const [tasks, setTasks] = useState(() => JSON.parse(localStorage.getItem('crm_tasks') || JSON.stringify(DEFAULT_TASKS)));
-      
+      // Авторизованный сотрудник
+      const [currentUser, setCurrentUser] = useState(() => {
+        const saved = localStorage.getItem('crm_current_user');
+        return saved ? JSON.parse(saved) : null;
+      });
+
+      const [team, setTeam] = useState([]);
+      const [clients, setClients] = useState([]);
+      const [tasks, setTasks] = useState([]);
+      const [loading, setLoading] = useState(true);
+
       const [activeTab, setActiveTab] = useState('clients'); // 'clients' | 'tasks' | 'team'
-      const [selectedClientId, setSelectedClientId] = useState('1');
+      const [selectedClientId, setSelectedClientId] = useState(null);
       const [taskScope, setTaskScope] = useState('all'); // 'all' | 'client' | 'team'
       const [statusFilter, setStatusFilter] = useState('Все');
       const [searchQuery, setSearchQuery] = useState('');
@@ -68,132 +47,208 @@
       const [showNewClientModal, setShowNewClientModal] = useState(false);
       const [showNewMemberModal, setShowNewMemberModal] = useState(false);
 
-      // Форма клиента
+      // Формы
       const [newClientName, setNewClientName] = useState('');
       const [newClientPhone, setNewClientPhone] = useState('');
       const [newClientEmail, setNewClientEmail] = useState('');
       const [newClientStatus, setNewClientStatus] = useState('Лид');
 
-      // Форма задач клиента
       const [newTaskText, setNewTaskText] = useState('');
       const [newTaskAssignee, setNewTaskAssignee] = useState('Отдел продаж');
 
-      // Форма командных задач
       const [teamTaskText, setTeamTaskText] = useState('');
-      const [teamTaskAuthor, setTeamTaskAuthor] = useState('Максим');
       const [teamTaskAssignee, setTeamTaskAssignee] = useState('Все');
 
-      // Заметки
       const [newNoteText, setNewNoteText] = useState('');
-
-      // Форма сотрудника
       const [newMember, setNewMember] = useState({
         name: '', role: '', department: 'Отдел продаж', phone: '', birthCity: '', birthDate: '', photo: ''
       });
 
-      useEffect(() => {
-        localStorage.setItem('crm_clients', JSON.stringify(clients));
-      }, [clients]);
+      // Загрузка данных из Supabase
+      const fetchData = async () => {
+        try {
+          const [teamRes, clientsRes, tasksRes] = await Promise.all([
+            supabase.from('team').select('*').order('created_at', { ascending: true }),
+            supabase.from('clients').select('*').order('created_at', { ascending: false }),
+            supabase.from('tasks').select('*').order('created_at', { ascending: false })
+          ]);
+
+          if (teamRes.data) setTeam(teamRes.data);
+          if (clientsRes.data) {
+            setClients(clientsRes.data);
+            if (clientsRes.data.length > 0 && !selectedClientId) {
+              setSelectedClientId(clientsRes.data[0].id);
+            }
+          }
+          if (tasksRes.data) setTasks(tasksRes.data);
+        } catch (err) {
+          console.error("Ошибка загрузки данных:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
 
       useEffect(() => {
-        localStorage.setItem('crm_tasks', JSON.stringify(tasks));
-      }, [tasks]);
+        fetchData();
 
-      useEffect(() => {
-        localStorage.setItem('crm_team', JSON.stringify(team));
-      }, [team]);
+        // Подписка на обновления в реальном времени
+        const channel = supabase.channel('crm_realtime')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => fetchData())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => fetchData())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'team' }, () => fetchData())
+          .subscribe();
 
-      const selectedClient = clients.find(c => c.id === selectedClientId);
+        return () => { supabase.removeChannel(channel); };
+      }, []);
 
-      const handleAddClient = (e) => {
+      const loginAs = (member) => {
+        setCurrentUser(member);
+        localStorage.setItem('crm_current_user', JSON.stringify(member));
+      };
+
+      const logout = () => {
+        setCurrentUser(null);
+        localStorage.removeItem('crm_current_user');
+      };
+
+      // Проверка прав: может ли текущий пользователь изменить задачу
+      const canManageTask = (task) => {
+        if (!currentUser) return false;
+        // Руководители могут менять всё
+        if (currentUser.department === 'Руководство') return true;
+        // Создатель задачи
+        if (task.created_by === currentUser.name) return true;
+        // Назначено лично на сотрудника
+        if (task.assignee === currentUser.name) return true;
+        // Назначено на всех
+        if (task.assignee === 'Все') return true;
+        // Назначено на отдел сотрудника
+        if (task.assignee === currentUser.department) return true;
+        return false;
+      };
+
+      // Добавление клиента
+      const handleAddClient = async (e) => {
         e.preventDefault();
         if (!newClientName.trim()) return;
-        const newEntry = {
-          id: Date.now().toString(),
+        const note = `${new Date().toLocaleDateString('ru-RU')}: Создана карточка (${currentUser?.name || 'Система'})`;
+        
+        const { data, error } = await supabase.from('clients').insert([{
           name: newClientName.trim(),
           phone: newClientPhone.trim(),
           email: newClientEmail.trim(),
           status: newClientStatus,
-          notes: [`${new Date().toLocaleDateString('ru-RU')}: Создана карточка`]
-        };
-        setClients([newEntry, ...clients]);
-        setSelectedClientId(newEntry.id);
-        setNewClientName('');
-        setNewClientPhone('');
-        setNewClientEmail('');
-        setShowNewClientModal(false);
+          notes: [note]
+        }]).select();
+
+        if (!error && data) {
+          setClients([data[0], ...clients]);
+          setSelectedClientId(data[0].id);
+          setNewClientName('');
+          setNewClientPhone('');
+          setNewClientEmail('');
+          setShowNewClientModal(false);
+        }
       };
 
-      const handleAddMember = (e) => {
-        e.preventDefault();
-        if (!newMember.name.trim()) return;
-        const entry = {
-          id: Date.now().toString(),
-          ...newMember,
-          photo: newMember.photo.trim() || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
-        };
-        setTeam([...team, entry]);
-        setNewMember({ name: '', role: '', department: 'Отдел продаж', phone: '', birthCity: '', birthDate: '', photo: '' });
-        setShowNewMemberModal(false);
+      // Смена статуса задачи
+      const toggleTask = async (task) => {
+        if (!canManageTask(task)) return;
+        const updatedDone = !task.done;
+        setTasks(tasks.map(t => t.id === task.id ? { ...t, done: updatedDone } : t));
+        await supabase.from('tasks').update({ done: updatedDone }).eq('id', task.id);
       };
 
-      const toggleTask = (id) => {
-        setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
-      };
-
-      const handleAddClientTask = (e) => {
+      // Добавление задачи клиенту
+      const handleAddClientTask = async (e) => {
         e.preventDefault();
         if (!newTaskText.trim() || !selectedClientId) return;
-        setTasks([{
-          id: Date.now().toString(),
+
+        const newTask = {
           type: 'client',
-          clientId: selectedClientId,
+          client_id: selectedClientId,
           title: newTaskText.trim(),
           tag: 'Клиент',
           assignee: newTaskAssignee,
-          createdBy: 'Команда',
+          created_by: currentUser?.name || 'Система',
           done: false
-        }, ...tasks]);
-        setNewTaskText('');
+        };
+
+        const { data } = await supabase.from('tasks').insert([newTask]).select();
+        if (data) {
+          setTasks([data[0], ...tasks]);
+          setNewTaskText('');
+        }
       };
 
-      const handleAddTeamTask = (e) => {
+      // Добавление командной задачи
+      const handleAddTeamTask = async (e) => {
         e.preventDefault();
         if (!teamTaskText.trim()) return;
-        setTasks([{
-          id: Date.now().toString(),
+
+        const newTask = {
           type: 'team',
-          clientId: null,
+          client_id: null,
           title: teamTaskText.trim(),
           tag: 'Команда',
           assignee: teamTaskAssignee,
-          createdBy: teamTaskAuthor,
+          created_by: currentUser?.name || 'Система',
           done: false
-        }, ...tasks]);
-        setTeamTaskText('');
+        };
+
+        const { data } = await supabase.from('tasks').insert([newTask]).select();
+        if (data) {
+          setTasks([data[0], ...tasks]);
+          setTeamTaskText('');
+        }
       };
 
-      const handleAddNote = (e) => {
+      // Добавление заметки
+      const handleAddNote = async (e) => {
         e.preventDefault();
         if (!newNoteText.trim() || !selectedClient) return;
-        const noteEntry = `${new Date().toLocaleDateString('ru-RU')}: ${newNoteText.trim()}`;
-        setClients(clients.map(c => c.id === selectedClient.id ? { ...c, notes: [noteEntry, ...c.notes] } : c));
+        const noteEntry = `${new Date().toLocaleDateString('ru-RU')} [${currentUser?.name}]: ${newNoteText.trim()}`;
+        const updatedNotes = [noteEntry, ...(selectedClient.notes || [])];
+
+        setClients(clients.map(c => c.id === selectedClient.id ? { ...c, notes: updatedNotes } : c));
         setNewNoteText('');
+        await supabase.from('clients').update({ notes: updatedNotes }).eq('id', selectedClient.id);
       };
 
-      const exportData = () => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ clients, tasks, team }, null, 2));
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `crm_backup_${new Date().toISOString().slice(0, 10)}.json`);
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
+      // Смена статуса клиента
+      const handleStatusChange = async (newStatus) => {
+        if (!selectedClient) return;
+        setClients(clients.map(c => c.id === selectedClient.id ? { ...c, status: newStatus } : c));
+        await supabase.from('clients').update({ status: newStatus }).eq('id', selectedClient.id);
       };
+
+      // Новый сотрудник
+      const handleAddMember = async (e) => {
+        e.preventDefault();
+        if (!newMember.name.trim()) return;
+        const payload = {
+          name: newMember.name.trim(),
+          role: newMember.role.trim(),
+          department: newMember.department,
+          phone: newMember.phone.trim(),
+          birth_city: newMember.birthCity.trim(),
+          birth_date: newMember.birthDate,
+          photo: newMember.photo.trim() || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
+        };
+
+        const { data } = await supabase.from('team').insert([payload]).select();
+        if (data) {
+          setTeam([...team, data[0]]);
+          setNewMember({ name: '', role: '', department: 'Отдел продаж', phone: '', birthCity: '', birthDate: '', photo: '' });
+          setShowNewMemberModal(false);
+        }
+      };
+
+      const selectedClient = clients.find(c => c.id === selectedClientId);
 
       const filteredClients = clients.filter(c => {
         const matchesStatus = statusFilter === 'Все' || c.status === statusFilter;
-        const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        const matchesSearch = c.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                               (c.phone && c.phone.includes(searchQuery));
         return matchesStatus && matchesSearch;
       });
@@ -204,38 +259,73 @@
         return true;
       });
 
+      // ЭКРАН ВХОДА (Если профиль еще не выбран)
+      if (!currentUser) {
+        return (
+          <div class="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+            <div class="bg-white max-w-md w-full p-8 rounded-3xl shadow-xl border border-slate-200 text-center">
+              <span class="text-3xl font-black text-indigo-600">⚡ 69CRM</span>
+              <h2 class="text-xl font-bold text-slate-800 mt-2 mb-1">Кто заходит в систему?</h2>
+              <p class="text-xs text-slate-500 mb-6">Выберите свой профиль для доступа к задачам и клиентам</p>
+
+              <div class="space-y-2">
+                {team.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => loginAs(m)}
+                    class="w-full flex items-center gap-3 p-3 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition group text-left">
+                    <img src={m.photo} class="w-11 h-11 rounded-xl object-cover bg-slate-100 border" />
+                    <div class="flex-1">
+                      <div class="font-bold text-sm text-slate-900 group-hover:text-indigo-600">{m.name}</div>
+                      <div class="text-xs text-slate-500">{m.role} • {m.department}</div>
+                    </div>
+                    <span class="text-slate-300 group-hover:text-indigo-600 font-bold">➔</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ОСНОВНОЙ ИНТЕРФЕЙС
       return (
         <div class="max-w-[1400px] mx-auto p-4 sm:p-6 flex flex-col min-h-screen">
-          {/* Верхняя шапка */}
-          <header class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-            <div class="flex items-center gap-2">
+          
+          {/* Header */}
+          <header class="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex items-center gap-4 w-full lg:w-auto justify-between">
               <span class="text-xl font-black tracking-tight text-indigo-600 flex items-center gap-1">⚡ 69CRM</span>
+              
+              {/* Бейдж текущего пользователя */}
+              <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+                <img src={currentUser.photo} class="w-7 h-7 rounded-lg object-cover" />
+                <div class="text-xs text-left">
+                  <div class="font-bold text-slate-800 leading-tight">{currentUser.name}</div>
+                  <div class="text-[10px] text-slate-500 leading-tight">{currentUser.department}</div>
+                </div>
+                <button onClick={logout} title="Сменить профиль" class="text-xs text-slate-400 hover:text-red-500 ml-2 font-bold">✕</button>
+              </div>
             </div>
 
-            {/* Вкладки: Клиенты / Задачи / Команда */}
+            {/* Вкладки */}
             <div class="bg-slate-100 p-1 rounded-xl flex gap-1">
-              <button 
-                onClick={() => setActiveTab('clients')}
-                class={`px-4 py-2 rounded-lg text-sm font-semibold transition ${activeTab === 'clients' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+              <button onClick={() => setActiveTab('clients')} class={`px-4 py-2 rounded-lg text-sm font-semibold transition ${activeTab === 'clients' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
                 Клиенты ({clients.length})
               </button>
-              <button 
-                onClick={() => setActiveTab('tasks')}
-                class={`px-4 py-2 rounded-lg text-sm font-semibold transition ${activeTab === 'tasks' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+              <button onClick={() => setActiveTab('tasks')} class={`px-4 py-2 rounded-lg text-sm font-semibold transition ${activeTab === 'tasks' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
                 Задачи ({tasks.filter(t => !t.done).length})
               </button>
-              <button 
-                onClick={() => setActiveTab('team')}
-                class={`px-4 py-2 rounded-lg text-sm font-semibold transition ${activeTab === 'team' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+              <button onClick={() => setActiveTab('team')} class={`px-4 py-2 rounded-lg text-sm font-semibold transition ${activeTab === 'team' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
                 Команда ({team.length})
               </button>
             </div>
 
             {/* Поиск и быстрые кнопки */}
-            <div class="flex items-center gap-3 w-full sm:w-auto">
+            <div class="flex items-center gap-3 w-full lg:w-auto">
               {activeTab === 'clients' && (
                 <>
-                  <div class="relative flex-1 sm:w-60">
+                  <div class="relative flex-1 lg:w-60">
                     <input 
                       type="text" 
                       value={searchQuery}
@@ -245,25 +335,21 @@
                     />
                     <span class="absolute left-3 top-2.5 text-slate-400 text-sm">🔍</span>
                   </div>
-                  <button 
-                    onClick={() => setShowNewClientModal(true)}
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap shadow-sm">
+                  <button onClick={() => setShowNewClientModal(true)} class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap shadow-sm">
                     + Клиент
                   </button>
                 </>
               )}
 
               {activeTab === 'team' && (
-                <button 
-                  onClick={() => setShowNewMemberModal(true)}
-                  class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap shadow-sm">
+                <button onClick={() => setShowNewMemberModal(true)} class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap shadow-sm">
                   + Сотрудник
                 </button>
               )}
             </div>
           </header>
 
-          {/* ВКЛАДКА: КЛИЕНТЫ */}
+          {/* ВКЛАДКА КЛИЕНТЫ */}
           {activeTab === 'clients' && (
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-start">
               <div class="lg:col-span-8 flex flex-col gap-4">
@@ -281,7 +367,7 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {filteredClients.map(client => {
-                    const clientActiveTasks = tasks.filter(t => t.clientId === client.id && !t.done);
+                    const clientActiveTasks = tasks.filter(t => t.client_id === client.id && !t.done);
                     const isSelected = selectedClientId === client.id;
 
                     return (
@@ -298,7 +384,7 @@
                           <div class="flex gap-2 mb-4">
                             {client.phone && (
                               <a href={`tel:${client.phone}`} onClick={e => e.stopPropagation()} class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg text-slate-700">
-                                📞 Позвонить
+                                📞 Звонок
                               </a>
                             )}
                             <a href={`https://t.me/${client.phone?.replace(/[^0-9]/g, '')}`} target="_blank" onClick={e => e.stopPropagation()} class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg text-slate-700">
@@ -314,11 +400,9 @@
                                   <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                                   <span class="truncate">{task.title}</span>
                                 </div>
-                                {task.assignee && (
-                                  <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
-                                    {task.assignee}
-                                  </span>
-                                )}
+                                <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
+                                  {task.assignee}
+                                </span>
                               </div>
                             ))}
                             {clientActiveTasks.length === 0 && (
@@ -336,18 +420,16 @@
               <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm sticky top-6">
                 {selectedClient ? (
                   <div class="flex flex-col gap-5">
-                    <div class="flex justify-between items-start border-b border-slate-100 pb-3">
-                      <div>
-                        <h2 class="text-lg font-bold text-slate-900">{selectedClient.name}</h2>
-                        <div class="text-xs text-slate-500 mt-1">{selectedClient.phone || 'Нет телефона'} • {selectedClient.email || 'Нет email'}</div>
-                      </div>
+                    <div class="border-b border-slate-100 pb-3">
+                      <h2 class="text-lg font-bold text-slate-900">{selectedClient.name}</h2>
+                      <div class="text-xs text-slate-500 mt-1">{selectedClient.phone || 'Нет телефона'} • {selectedClient.email || 'Нет email'}</div>
                     </div>
 
                     <div>
                       <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Статус воронки</label>
                       <select 
                         value={selectedClient.status}
-                        onChange={(e) => setClients(clients.map(c => c.id === selectedClient.id ? { ...c, status: e.target.value } : c))}
+                        onChange={(e) => handleStatusChange(e.target.value)}
                         class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500">
                         {CLIENT_STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
                       </select>
@@ -356,26 +438,38 @@
                     <div>
                       <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Задачи по клиенту</label>
                       <div class="space-y-2 mb-3 max-h-40 overflow-y-auto pr-1">
-                        {tasks.filter(t => t.clientId === selectedClient.id).map(t => (
-                          <div key={t.id} class="flex items-center justify-between p-2 bg-slate-50 rounded-xl text-sm border border-slate-100">
-                            <div class="flex items-center gap-2 truncate">
-                              <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)} class="rounded text-indigo-600 cursor-pointer" />
-                              <span class={`truncate ${t.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{t.title}</span>
+                        {tasks.filter(t => t.client_id === selectedClient.id).map(t => {
+                          const allowed = canManageTask(t);
+                          return (
+                            <div key={t.id} class="flex items-center justify-between p-2 bg-slate-50 rounded-xl text-sm border border-slate-100">
+                              <div class="flex items-center gap-2 truncate">
+                                <input 
+                                  type="checkbox" 
+                                  checked={t.done} 
+                                  disabled={!allowed}
+                                  onChange={() => toggleTask(t)} 
+                                  title={allowed ? "Отметить задачу" : "Чужая задача — доступ ограничен"}
+                                  class={`rounded cursor-pointer ${allowed ? 'text-indigo-600' : 'opacity-40 cursor-not-allowed'}`} 
+                                />
+                                <span class={`truncate ${t.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{t.title}</span>
+                              </div>
+                              <div class="flex items-center gap-1">
+                                {!allowed && <span title="Только для ответственного">🔒</span>}
+                                <span class="text-[11px] bg-indigo-50 text-indigo-700 font-medium px-2 py-0.5 rounded-md whitespace-nowrap">
+                                  {t.assignee || 'Все'}
+                                </span>
+                              </div>
                             </div>
-                            <span class="text-[11px] bg-indigo-50 text-indigo-700 font-medium px-2 py-0.5 rounded-md whitespace-nowrap">
-                              {t.assignee || 'Все'}
-                            </span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
-                      {/* Добавление задачи клиенту с ответственным */}
                       <form onSubmit={handleAddClientTask} class="flex flex-col gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                         <input 
                           type="text" 
                           value={newTaskText} 
                           onChange={(e) => setNewTaskText(e.target.value)} 
-                          placeholder="Новая задача..." 
+                          placeholder="Новая задача клиенту..." 
                           class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500" 
                         />
                         <div class="flex gap-2 items-center">
@@ -407,14 +501,14 @@
                           type="text" 
                           value={newNoteText} 
                           onChange={(e) => setNewNoteText(e.target.value)} 
-                          placeholder="Заметка о звонке / встрече..." 
+                          placeholder="Результат созвона..." 
                           class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500" 
                         />
                         <button type="submit" class="bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-medium hover:bg-slate-900">Записать</button>
                       </form>
 
                       <div class="space-y-2 max-h-36 overflow-y-auto pr-1">
-                        {selectedClient.notes.map((note, idx) => (
+                        {(selectedClient.notes || []).map((note, idx) => (
                           <div key={idx} class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 leading-relaxed">
                             {note}
                           </div>
@@ -429,7 +523,7 @@
             </div>
           )}
 
-          {/* ВКЛАДКА: ЗАДАЧНИК */}
+          {/* ВКЛАДКА ЗАДАЧНИК */}
           {activeTab === 'tasks' && (
             <div class="max-w-4xl mx-auto w-full flex flex-col gap-6">
               <div class="flex justify-between items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
@@ -446,9 +540,9 @@
                 </div>
               </div>
 
-              {/* Постановка командной задачи с выбором автора и исполнителя */}
+              {/* Создание командной задачи */}
               <form onSubmit={handleAddTeamTask} class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3">
-                <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Поставить командную задачу</div>
+                <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Поставить командную задачу от имени [{currentUser.name}]</div>
                 <input 
                   type="text" 
                   value={teamTaskText}
@@ -458,22 +552,16 @@
                 />
                 <div class="flex flex-wrap gap-3 items-center">
                   <div class="flex items-center gap-1.5 text-xs text-slate-500">
-                    <span>Автор:</span>
-                    <select 
-                      value={teamTaskAuthor} 
-                      onChange={e => setTeamTaskAuthor(e.target.value)}
-                      class="bg-slate-50 border border-slate-200 rounded-lg p-1.5 font-medium text-slate-800">
-                      {team.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
-                    </select>
-                  </div>
-
-                  <div class="flex items-center gap-1.5 text-xs text-slate-500">
                     <span>Кому:</span>
                     <select 
                       value={teamTaskAssignee} 
                       onChange={e => setTeamTaskAssignee(e.target.value)}
                       class="bg-slate-50 border border-slate-200 rounded-lg p-1.5 font-medium text-slate-800">
-                      {ASSIGNEE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      <option value="Все">Все</option>
+                      <option value="Отдел продаж">Отдел продаж</option>
+                      <option value="Отдел аккаунтинга">Отдел аккаунтинга</option>
+                      <option value="Руководители">Руководители</option>
+                      {team.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                     </select>
                   </div>
 
@@ -486,20 +574,30 @@
               {/* Список задач */}
               <div class="space-y-2">
                 {filteredTasks.map(task => {
-                  const client = clients.find(c => c.id === task.clientId);
+                  const client = clients.find(c => c.id === task.client_id);
+                  const allowed = canManageTask(task);
+
                   return (
                     <div key={task.id} class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-4">
                       <div class="flex items-center gap-3">
-                        <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} class="w-4 h-4 rounded text-indigo-600 cursor-pointer" />
+                        <input 
+                          type="checkbox" 
+                          checked={task.done} 
+                          disabled={!allowed}
+                          onChange={() => toggleTask(task)} 
+                          title={allowed ? "Отметить" : "Чужая задача — доступ ограничен"}
+                          class={`w-4 h-4 rounded cursor-pointer ${allowed ? 'text-indigo-600' : 'opacity-40 cursor-not-allowed'}`} 
+                        />
                         <span class={`text-sm ${task.done ? 'line-through text-slate-400' : 'font-medium text-slate-800'}`}>
                           {task.title}
                         </span>
+                        {!allowed && <span title="Только для ответственного">🔒</span>}
                       </div>
 
                       <div class="flex items-center gap-2 flex-wrap justify-end">
                         {task.type === 'team' ? (
                           <span class="text-xs bg-amber-50 text-amber-800 font-semibold px-2.5 py-1 rounded-lg border border-amber-200">
-                            От: {task.createdBy} ➔ {task.assignee || 'Все'}
+                            От: {task.created_by} ➔ {task.assignee || 'Все'}
                           </span>
                         ) : (
                           <>
@@ -521,7 +619,7 @@
             </div>
           )}
 
-          {/* ВКЛАДКА: КОМАНДА */}
+          {/* ВКЛАДКА КОМАНДА */}
           {activeTab === 'team' && (
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {team.map(member => (
@@ -549,25 +647,17 @@
                     </div>
                     <div class="flex justify-between">
                       <span class="text-slate-400">Город рождения:</span>
-                      <span class="font-medium text-slate-800">{member.birthCity || '—'}</span>
+                      <span class="font-medium text-slate-800">{member.birth_city || '—'}</span>
                     </div>
                     <div class="flex justify-between">
                       <span class="text-slate-400">Дата рождения:</span>
-                      <span class="font-medium text-slate-800">{member.birthDate || '—'}</span>
+                      <span class="font-medium text-slate-800">{member.birth_date || '—'}</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
-
-          {/* Футер */}
-          <footer class="mt-auto pt-8 pb-4 flex justify-between items-center text-xs text-slate-400">
-            <div>69CRM • Локальное хранилище данных</div>
-            <button onClick={exportData} class="flex items-center gap-1 hover:text-indigo-600 font-semibold cursor-pointer">
-              📥 Экспорт бэкапа (JSON)
-            </button>
-          </footer>
 
           {/* Модалка: Новый клиент */}
           {showNewClientModal && (
@@ -602,7 +692,7 @@
                   <button onClick={() => setShowNewMemberModal(false)} class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
                 </div>
                 <form onSubmit={handleAddMember} class="space-y-3">
-                  <input required value={newMember.name} onChange={e => setNewMember({...newMember, name: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="ФИО / Имя *" />
+                  <input required value={newMember.name} onChange={e => setNewMember({...newMember, name: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="Имя / ФИО *" />
                   <input required value={newMember.role} onChange={e => setNewMember({...newMember, role: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="Должность *" />
                   <select value={newMember.department} onChange={e => setNewMember({...newMember, department: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm">
                     {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
@@ -610,7 +700,7 @@
                   <input value={newMember.phone} onChange={e => setNewMember({...newMember, phone: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="Телефон" />
                   <input value={newMember.birthCity} onChange={e => setNewMember({...newMember, birthCity: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="Город рождения" />
                   <input type="date" value={newMember.birthDate} onChange={e => setNewMember({...newMember, birthDate: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" />
-                  <input value={newMember.photo} onChange={e => setNewMember({...newMember, photo: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="URL ссылки на фото" />
+                  <input value={newMember.photo} onChange={e => setNewMember({...newMember, photo: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="Ссылка на фото" />
                   <div class="flex gap-2 pt-2">
                     <button type="button" onClick={() => setShowNewMemberModal(false)} class="flex-1 bg-slate-100 py-2.5 rounded-xl text-sm font-semibold">Отмена</button>
                     <button type="submit" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold">Добавить</button>
