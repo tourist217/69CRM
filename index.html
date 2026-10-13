@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MiniCRM</title>
+  <title>69CRM</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -16,38 +16,80 @@
     const { useState, useEffect } = React;
 
     const CLIENT_STATUSES = ['Лид', 'В работе', 'Сделка заключена', 'Отказ'];
-    
-    // Начальные демо-данные при первом открытии
+    const DEPARTMENTS = ['Руководство', 'Отдел продаж', 'Отдел аккаунтинга'];
+
+    const DEFAULT_TEAM = [
+      { id: 't1', name: 'Максим', role: 'Руководитель', department: 'Руководство', phone: '+7 (999) 100-01-01', birthCity: 'Москва', birthDate: '1988-04-12', photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80' },
+      { id: 't2', name: 'Сергей', role: 'Руководитель', department: 'Руководство', phone: '+7 (999) 100-02-02', birthCity: 'Санкт-Петербург', birthDate: '1987-09-20', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80' },
+      { id: 't3', name: 'Павел', role: 'Менеджер продаж', department: 'Отдел продаж', phone: '+7 (999) 200-03-03', birthCity: 'Казань', birthDate: '1995-02-14', photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80' },
+      { id: 't4', name: 'Василий', role: 'Менеджер продаж', department: 'Отдел продаж', phone: '+7 (999) 200-04-04', birthCity: 'Екатеринбург', birthDate: '1996-07-08', photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80' },
+      { id: 't5', name: 'Александра', role: 'Аккаунт-менеджер', department: 'Отдел аккаунтинга', phone: '+7 (999) 300-05-05', birthCity: 'Новосибирск', birthDate: '1997-11-25', photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80' },
+      { id: 't6', name: 'Игорь', role: 'Аккаунт-менеджер', department: 'Отдел аккаунтинга', phone: '+7 (999) 300-06-06', birthCity: 'Самара', birthDate: '1994-05-19', photo: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80' }
+    ];
+
     const DEFAULT_CLIENTS = [
       { id: '1', name: 'Иван Иванов (ИП)', phone: '+7 (999) 111-22-33', email: 'ivanov@gmail.com', status: 'В работе', notes: ['12 Окт: Созвон, обсудили ТЗ', '10 Окт: Добавлен контакт'] },
       { id: '2', name: 'ИП Кузнецов', phone: '+7 (999) 444-55-66', email: 'kuznetsov@ya.ru', status: 'Лид', notes: ['9 Окт: Заявка с сайта'] },
-      { id: '3', name: 'ООО "Вектор"', phone: '+7 (495) 777-88-99', email: 'info@vektor.ru', status: 'В работе', notes: ['11 Окт: Отправили договор'] }
+      { id: '3', профессионал: 'ООО "Вектор"', name: 'ООО "Вектор"', phone: '+7 (495) 777-88-99', email: 'info@vektor.ru', status: 'В работе', notes: ['11 Окт: Отправили договор'] }
     ];
 
     const DEFAULT_TASKS = [
-      { id: '101', type: 'client', clientId: '1', title: 'Отправить КП', tag: 'Завтра', done: false },
-      { id: '102', type: 'client', clientId: '1', title: 'Согласовать договор', tag: 'Срочно', done: false },
-      { id: '103', type: 'team', clientId: null, title: 'Обновить прайс-лист на услуги', tag: 'Команда', done: false },
-      { id: '104', type: 'team', clientId: null, title: 'Провести планерку в понедельник', tag: 'Команда', done: false }
+      { id: '101', type: 'client', clientId: '1', title: 'Отправить КП', tag: 'Завтра', assignee: 'Отдел продаж', createdBy: 'Максим', done: false },
+      { id: '102', type: 'client', clientId: '1', title: 'Согласовать договор', tag: 'Срочно', assignee: 'Александра', createdBy: 'Сергей', done: false },
+      { id: '103', type: 'team', clientId: null, title: 'Обновить прайс-лист на услуги', tag: 'Команда', assignee: 'Руководители', createdBy: 'Максим', done: false },
+      { id: '104', type: 'team', clientId: null, title: 'Провести планерку отделов', tag: 'Команда', assignee: 'Все', createdBy: 'Сергей', done: false }
+    ];
+
+    const ASSIGNEE_OPTIONS = [
+      'Все',
+      'Отдел продаж',
+      'Отдел аккаунтинга',
+      'Руководители',
+      'Максим',
+      'Сергей',
+      'Павел',
+      'Василий',
+      'Александра',
+      'Игорь'
     ];
 
     function App() {
+      const [team, setTeam] = useState(() => JSON.parse(localStorage.getItem('crm_team') || JSON.stringify(DEFAULT_TEAM)));
       const [clients, setClients] = useState(() => JSON.parse(localStorage.getItem('crm_clients') || JSON.stringify(DEFAULT_CLIENTS)));
       const [tasks, setTasks] = useState(() => JSON.parse(localStorage.getItem('crm_tasks') || JSON.stringify(DEFAULT_TASKS)));
+      
+      const [activeTab, setActiveTab] = useState('clients'); // 'clients' | 'tasks' | 'team'
       const [selectedClientId, setSelectedClientId] = useState('1');
-      const [activeTab, setActiveTab] = useState('clients'); // 'clients' | 'tasks'
       const [taskScope, setTaskScope] = useState('all'); // 'all' | 'client' | 'team'
       const [statusFilter, setStatusFilter] = useState('Все');
       const [searchQuery, setSearchQuery] = useState('');
-      
+
+      // Модалки
       const [showNewClientModal, setShowNewClientModal] = useState(false);
+      const [showNewMemberModal, setShowNewMemberModal] = useState(false);
+
+      // Форма клиента
       const [newClientName, setNewClientName] = useState('');
       const [newClientPhone, setNewClientPhone] = useState('');
       const [newClientEmail, setNewClientEmail] = useState('');
       const [newClientStatus, setNewClientStatus] = useState('Лид');
 
-      const [newNoteText, setNewNoteText] = useState('');
+      // Форма задач клиента
       const [newTaskText, setNewTaskText] = useState('');
+      const [newTaskAssignee, setNewTaskAssignee] = useState('Отдел продаж');
+
+      // Форма командных задач
+      const [teamTaskText, setTeamTaskText] = useState('');
+      const [teamTaskAuthor, setTeamTaskAuthor] = useState('Максим');
+      const [teamTaskAssignee, setTeamTaskAssignee] = useState('Все');
+
+      // Заметки
+      const [newNoteText, setNewNoteText] = useState('');
+
+      // Форма сотрудника
+      const [newMember, setNewMember] = useState({
+        name: '', role: '', department: 'Отдел продаж', phone: '', birthCity: '', birthDate: '', photo: ''
+      });
 
       useEffect(() => {
         localStorage.setItem('crm_clients', JSON.stringify(clients));
@@ -57,9 +99,12 @@
         localStorage.setItem('crm_tasks', JSON.stringify(tasks));
       }, [tasks]);
 
+      useEffect(() => {
+        localStorage.setItem('crm_team', JSON.stringify(team));
+      }, [team]);
+
       const selectedClient = clients.find(c => c.id === selectedClientId);
 
-      // Добавление клиента
       const handleAddClient = (e) => {
         e.preventDefault();
         if (!newClientName.trim()) return;
@@ -79,12 +124,23 @@
         setShowNewClientModal(false);
       };
 
-      // Переключение чекбокса задачи
+      const handleAddMember = (e) => {
+        e.preventDefault();
+        if (!newMember.name.trim()) return;
+        const entry = {
+          id: Date.now().toString(),
+          ...newMember,
+          photo: newMember.photo.trim() || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
+        };
+        setTeam([...team, entry]);
+        setNewMember({ name: '', role: '', department: 'Отдел продаж', phone: '', birthCity: '', birthDate: '', photo: '' });
+        setShowNewMemberModal(false);
+      };
+
       const toggleTask = (id) => {
         setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
       };
 
-      // Добавление задачи клиенту
       const handleAddClientTask = (e) => {
         e.preventDefault();
         if (!newTaskText.trim() || !selectedClientId) return;
@@ -93,26 +149,30 @@
           type: 'client',
           clientId: selectedClientId,
           title: newTaskText.trim(),
-          tag: 'В процессе',
+          tag: 'Клиент',
+          assignee: newTaskAssignee,
+          createdBy: 'Команда',
           done: false
         }, ...tasks]);
         setNewTaskText('');
       };
 
-      // Добавление командной задачи
-      const handleAddTeamTask = (text) => {
-        if (!text.trim()) return;
+      const handleAddTeamTask = (e) => {
+        e.preventDefault();
+        if (!teamTaskText.trim()) return;
         setTasks([{
           id: Date.now().toString(),
           type: 'team',
           clientId: null,
-          title: text.trim(),
+          title: teamTaskText.trim(),
           tag: 'Команда',
+          assignee: teamTaskAssignee,
+          createdBy: teamTaskAuthor,
           done: false
         }, ...tasks]);
+        setTeamTaskText('');
       };
 
-      // Добавление заметки в историю клиента
       const handleAddNote = (e) => {
         e.preventDefault();
         if (!newNoteText.trim() || !selectedClient) return;
@@ -121,15 +181,8 @@
         setNewNoteText('');
       };
 
-      // Смена статуса
-      const handleStatusChange = (newStatus) => {
-        if (!selectedClient) return;
-        setClients(clients.map(c => c.id === selectedClient.id ? { ...c, status: newStatus } : c));
-      };
-
-      // Экспорт в JSON
       const exportData = () => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ clients, tasks }, null, 2));
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ clients, tasks, team }, null, 2));
         const downloadAnchor = document.createElement('a');
         downloadAnchor.setAttribute("href", dataStr);
         downloadAnchor.setAttribute("download", `crm_backup_${new Date().toISOString().slice(0, 10)}.json`);
@@ -138,16 +191,13 @@
         downloadAnchor.remove();
       };
 
-      // Фильтрация клиентов
       const filteredClients = clients.filter(c => {
         const matchesStatus = statusFilter === 'Все' || c.status === statusFilter;
         const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              (c.phone && c.phone.includes(searchQuery)) ||
-                              (c.email && c.email.toLowerCase().includes(searchQuery.toLowerCase()));
+                              (c.phone && c.phone.includes(searchQuery));
         return matchesStatus && matchesSearch;
       });
 
-      // Фильтрация задач во вкладке задач
       const filteredTasks = tasks.filter(t => {
         if (taskScope === 'client') return t.type === 'client';
         if (taskScope === 'team') return t.type === 'team';
@@ -156,13 +206,13 @@
 
       return (
         <div class="max-w-[1400px] mx-auto p-4 sm:p-6 flex flex-col min-h-screen">
-          {/* Верхний Header */}
+          {/* Верхняя шапка */}
           <header class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
             <div class="flex items-center gap-2">
-              <span class="text-xl font-black tracking-tight text-indigo-600 flex items-center gap-1">⚡ MiniCRM</span>
+              <span class="text-xl font-black tracking-tight text-indigo-600 flex items-center gap-1">⚡ 69CRM</span>
             </div>
 
-            {/* Вкладки: Клиенты / Задачи */}
+            {/* Вкладки: Клиенты / Задачи / Команда */}
             <div class="bg-slate-100 p-1 rounded-xl flex gap-1">
               <button 
                 onClick={() => setActiveTab('clients')}
@@ -174,35 +224,49 @@
                 class={`px-4 py-2 rounded-lg text-sm font-semibold transition ${activeTab === 'tasks' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
                 Задачи ({tasks.filter(t => !t.done).length})
               </button>
+              <button 
+                onClick={() => setActiveTab('team')}
+                class={`px-4 py-2 rounded-lg text-sm font-semibold transition ${activeTab === 'team' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+                Команда ({team.length})
+              </button>
             </div>
 
-            {/* Поиск и добавление */}
+            {/* Поиск и быстрые кнопки */}
             <div class="flex items-center gap-3 w-full sm:w-auto">
-              <div class="relative flex-1 sm:w-64">
-                <input 
-                  type="text" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Поиск клиентов..." 
-                  class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500"
-                />
-                <span class="absolute left-3 top-2.5 text-slate-400 text-sm">🔍</span>
-              </div>
-              <button 
-                onClick={() => setShowNewClientModal(true)}
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap shadow-sm">
-                + Новый клиент
-              </button>
+              {activeTab === 'clients' && (
+                <>
+                  <div class="relative flex-1 sm:w-60">
+                    <input 
+                      type="text" 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Поиск клиентов..." 
+                      class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500"
+                    />
+                    <span class="absolute left-3 top-2.5 text-slate-400 text-sm">🔍</span>
+                  </div>
+                  <button 
+                    onClick={() => setShowNewClientModal(true)}
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap shadow-sm">
+                    + Клиент
+                  </button>
+                </>
+              )}
+
+              {activeTab === 'team' && (
+                <button 
+                  onClick={() => setShowNewMemberModal(true)}
+                  class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap shadow-sm">
+                  + Сотрудник
+                </button>
+              )}
             </div>
           </header>
 
           {/* ВКЛАДКА: КЛИЕНТЫ */}
           {activeTab === 'clients' && (
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-start">
-              
-              {/* Левая колонка: Картотека */}
               <div class="lg:col-span-8 flex flex-col gap-4">
-                {/* Фильтр по статусу */}
                 <div class="flex items-center gap-2 overflow-x-auto pb-1 text-sm font-medium">
                   <span class="text-slate-400 mr-1">Статус:</span>
                   {['Все', ...CLIENT_STATUSES].map(st => (
@@ -215,7 +279,6 @@
                   ))}
                 </div>
 
-                {/* Сетка карточек клиентов */}
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {filteredClients.map(client => {
                     const clientActiveTasks = tasks.filter(t => t.clientId === client.id && !t.done);
@@ -226,41 +289,40 @@
                         key={client.id}
                         onClick={() => setSelectedClientId(client.id)}
                         class={`p-4 rounded-2xl bg-white border cursor-pointer transition shadow-sm hover:shadow-md flex flex-col justify-between min-h-[220px] ${isSelected ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-200'}`}>
-                        
                         <div>
-                          <div class="flex justify-between items-start mb-2">
-                            <h3 class="font-bold text-slate-900 leading-snug">{client.name}</h3>
-                          </div>
-
+                          <h3 class="font-bold text-slate-900 leading-snug mb-1">{client.name}</h3>
                           <div class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 mb-3">
                             {client.status}
                           </div>
 
-                          {/* Быстрые контакты */}
                           <div class="flex gap-2 mb-4">
                             {client.phone && (
-                              <a href={`tel:${client.phone}`} onClick={e => e.stopPropagation()} class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg text-slate-700 flex items-center gap-1">
+                              <a href={`tel:${client.phone}`} onClick={e => e.stopPropagation()} class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg text-slate-700">
                                 📞 Позвонить
                               </a>
                             )}
-                            <a href={`https://t.me/${client.phone?.replace(/[^0-9]/g, '')}`} target="_blank" onClick={e => e.stopPropagation()} class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg text-slate-700 flex items-center gap-1">
+                            <a href={`https://t.me/${client.phone?.replace(/[^0-9]/g, '')}`} target="_blank" onClick={e => e.stopPropagation()} class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg text-slate-700">
                               💬 TG
                             </a>
                           </div>
 
-                          {/* Задачи по клиенту на карточке */}
                           <div class="border-t border-slate-100 pt-2 space-y-1.5">
-                            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">События и задачи</div>
+                            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Задачи</div>
                             {clientActiveTasks.slice(0, 2).map(task => (
-                              <div key={task.id} class="flex items-center gap-1.5 text-xs text-slate-600">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                <span class="truncate">{task.title}</span>
+                              <div key={task.id} class="flex items-center justify-between text-xs text-slate-600">
+                                <div class="flex items-center gap-1.5 truncate">
+                                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                  <span class="truncate">{task.title}</span>
+                                </div>
+                                {task.assignee && (
+                                  <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
+                                    {task.assignee}
+                                  </span>
+                                )}
                               </div>
                             ))}
                             {clientActiveTasks.length === 0 && (
-                              <div class="text-xs text-amber-600 font-medium flex items-center gap-1">
-                                ⚠️ Нет задач (Next Action)
-                              </div>
+                              <div class="text-xs text-amber-600 font-medium">⚠️ Нет активных задач</div>
                             )}
                           </div>
                         </div>
@@ -270,7 +332,7 @@
                 </div>
               </div>
 
-              {/* Правая колонка: Боковая панель клиента */}
+              {/* Боковая панель клиента */}
               <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm sticky top-6">
                 {selectedClient ? (
                   <div class="flex flex-col gap-5">
@@ -281,72 +343,71 @@
                       </div>
                     </div>
 
-                    {/* Смена статуса */}
                     <div>
                       <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Статус воронки</label>
                       <select 
                         value={selectedClient.status}
-                        onChange={(e) => handleStatusChange(e.target.value)}
+                        onChange={(e) => setClients(clients.map(c => c.id === selectedClient.id ? { ...c, status: e.target.value } : c))}
                         class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500">
                         {CLIENT_STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
                       </select>
                     </div>
 
-                    {/* Задачи клиента */}
                     <div>
-                      <div class="flex justify-between items-center mb-2">
-                        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Задачи по клиенту</label>
-                      </div>
-
+                      <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Задачи по клиенту</label>
                       <div class="space-y-2 mb-3 max-h-40 overflow-y-auto pr-1">
                         {tasks.filter(t => t.clientId === selectedClient.id).map(t => (
-                          <div key={t.id} class="flex items-center gap-2 p-2 bg-slate-50 rounded-xl text-sm border border-slate-100">
-                            <input 
-                              type="checkbox" 
-                              checked={t.done} 
-                              onChange={() => toggleTask(t.id)} 
-                              class="rounded text-indigo-600 cursor-pointer"
-                            />
-                            <span class={`flex-1 truncate ${t.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{t.title}</span>
+                          <div key={t.id} class="flex items-center justify-between p-2 bg-slate-50 rounded-xl text-sm border border-slate-100">
+                            <div class="flex items-center gap-2 truncate">
+                              <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)} class="rounded text-indigo-600 cursor-pointer" />
+                              <span class={`truncate ${t.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{t.title}</span>
+                            </div>
+                            <span class="text-[11px] bg-indigo-50 text-indigo-700 font-medium px-2 py-0.5 rounded-md whitespace-nowrap">
+                              {t.assignee || 'Все'}
+                            </span>
                           </div>
                         ))}
                       </div>
 
-                      <form onSubmit={handleAddClientTask} class="flex gap-2">
+                      {/* Добавление задачи клиенту с ответственным */}
+                      <form onSubmit={handleAddClientTask} class="flex flex-col gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                         <input 
                           type="text" 
                           value={newTaskText} 
                           onChange={(e) => setNewTaskText(e.target.value)} 
-                          placeholder="Добавить задачу клиенту..." 
-                          class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500" 
+                          placeholder="Новая задача..." 
+                          class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500" 
                         />
-                        <button type="submit" class="bg-indigo-600 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:bg-indigo-700">+</button>
+                        <div class="flex gap-2 items-center">
+                          <select 
+                            value={newTaskAssignee}
+                            onChange={(e) => setNewTaskAssignee(e.target.value)}
+                            class="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none">
+                            <optgroup label="Группы / Отделы">
+                              <option value="Все">👥 Все</option>
+                              <option value="Отдел продаж">💼 Отдел продаж</option>
+                              <option value="Отдел аккаунтинга">🤝 Отдел аккаунтинга</option>
+                              <option value="Руководители">👑 Руководители</option>
+                            </optgroup>
+                            <optgroup label="Сотрудники">
+                              {team.map(m => <option key={m.id} value={m.name}>👤 {m.name}</option>)}
+                            </optgroup>
+                          </select>
+                          <button type="submit" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 whitespace-nowrap">
+                            + Добавить
+                          </button>
+                        </div>
                       </form>
-
-                      {/* Быстрые шаблоны */}
-                      <div class="flex gap-2 mt-2">
-                        <button 
-                          onClick={() => setTasks([{ id: Date.now().toString(), type: 'client', clientId: selectedClient.id, title: 'Перезвонить завтра', tag: 'Завтра', done: false }, ...tasks])}
-                          class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded-lg">
-                          + Перезвонить завтра
-                        </button>
-                        <button 
-                          onClick={() => setTasks([{ id: Date.now().toString(), type: 'client', clientId: selectedClient.id, title: 'Отправить КП', tag: 'Срочно', done: false }, ...tasks])}
-                          class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded-lg">
-                          + Отправить КП
-                        </button>
-                      </div>
                     </div>
 
-                    {/* Таймлайн истории и заметок */}
-                    <div class="border-t border-slate-100 pt-4">
+                    <div class="border-t border-slate-100 pt-3">
                       <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">История и заметки</label>
                       <form onSubmit={handleAddNote} class="flex gap-2 mb-3">
                         <input 
                           type="text" 
                           value={newNoteText} 
                           onChange={(e) => setNewNoteText(e.target.value)} 
-                          placeholder="Добавить результат разговора..." 
+                          placeholder="Заметка о звонке / встрече..." 
                           class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500" 
                         />
                         <button type="submit" class="bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-medium hover:bg-slate-900">Записать</button>
@@ -360,121 +421,155 @@
                         ))}
                       </div>
                     </div>
-
                   </div>
                 ) : (
-                  <div class="text-center text-slate-400 py-12">Выберите клиента для просмотра</div>
+                  <div class="text-center text-slate-400 py-12">Выберите клиента</div>
                 )}
               </div>
-
             </div>
           )}
 
-          {/* ВКЛАДКА: ЗАДАЧНИК (КЛИЕНТСКИЕ + КОМАНДНЫЕ) */}
+          {/* ВКЛАДКА: ЗАДАЧНИК */}
           {activeTab === 'tasks' && (
             <div class="max-w-4xl mx-auto w-full flex flex-col gap-6">
-              
-              {/* Фильтр: Все / Клиентские / Командные */}
-              <div class="flex justify-between items-center bg-white p-3 rounded-2xl border border-slate-200">
+              <div class="flex justify-between items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
                 <div class="flex gap-1">
-                  <button 
-                    onClick={() => setTaskScope('all')} 
-                    class={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${taskScope === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                  <button onClick={() => setTaskScope('all')} class={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${taskScope === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
                     Все задачи
                   </button>
-                  <button 
-                    onClick={() => setTaskScope('client')} 
-                    class={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${taskScope === 'client' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                  <button onClick={() => setTaskScope('client')} class={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${taskScope === 'client' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
                     👤 Клиентские
                   </button>
-                  <button 
-                    onClick={() => setTaskScope('team')} 
-                    class={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${taskScope === 'team' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                  <button onClick={() => setTaskScope('team')} class={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${taskScope === 'team' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
                     👥 Командные
                   </button>
                 </div>
               </div>
 
-              {/* Форма быстрого создания Командной задачи */}
-              <div class="bg-white p-4 rounded-2xl border border-slate-200 flex gap-2">
+              {/* Постановка командной задачи с выбором автора и исполнителя */}
+              <form onSubmit={handleAddTeamTask} class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3">
+                <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Поставить командную задачу</div>
                 <input 
                   type="text" 
-                  id="teamTaskInput"
-                  placeholder="Добавить новую командную задачу..." 
-                  class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleAddTeamTask(e.target.value);
-                      e.target.value = '';
-                    }
-                  }}
+                  value={teamTaskText}
+                  onChange={e => setTeamTaskText(e.target.value)}
+                  placeholder="Что нужно сделать команде?" 
+                  class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 />
-                <button 
-                  onClick={() => {
-                    const el = document.getElementById('teamTaskInput');
-                    handleAddTeamTask(el.value);
-                    el.value = '';
-                  }}
-                  class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700">
-                  Добавить
-                </button>
-              </div>
+                <div class="flex flex-wrap gap-3 items-center">
+                  <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span>Автор:</span>
+                    <select 
+                      value={teamTaskAuthor} 
+                      onChange={e => setTeamTaskAuthor(e.target.value)}
+                      class="bg-slate-50 border border-slate-200 rounded-lg p-1.5 font-medium text-slate-800">
+                      {team.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                    </select>
+                  </div>
+
+                  <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span>Кому:</span>
+                    <select 
+                      value={teamTaskAssignee} 
+                      onChange={e => setTeamTaskAssignee(e.target.value)}
+                      class="bg-slate-50 border border-slate-200 rounded-lg p-1.5 font-medium text-slate-800">
+                      {ASSIGNEE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </div>
+
+                  <button type="submit" class="ml-auto bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-semibold hover:bg-indigo-700">
+                    Создать задачу
+                  </button>
+                </div>
+              </form>
 
               {/* Список задач */}
               <div class="space-y-2">
                 {filteredTasks.map(task => {
                   const client = clients.find(c => c.id === task.clientId);
                   return (
-                    <div 
-                      key={task.id} 
-                      class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-4">
-                      
+                    <div key={task.id} class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-4">
                       <div class="flex items-center gap-3">
-                        <input 
-                          type="checkbox" 
-                          checked={task.done} 
-                          onChange={() => toggleTask(task.id)} 
-                          class="w-4 h-4 rounded text-indigo-600 cursor-pointer"
-                        />
+                        <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} class="w-4 h-4 rounded text-indigo-600 cursor-pointer" />
                         <span class={`text-sm ${task.done ? 'line-through text-slate-400' : 'font-medium text-slate-800'}`}>
                           {task.title}
                         </span>
                       </div>
 
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-2 flex-wrap justify-end">
                         {task.type === 'team' ? (
-                          <span class="text-xs bg-amber-50 text-amber-700 font-semibold px-2.5 py-1 rounded-full border border-amber-200">
-                            👥 Командная
+                          <span class="text-xs bg-amber-50 text-amber-800 font-semibold px-2.5 py-1 rounded-lg border border-amber-200">
+                            От: {task.createdBy} ➔ {task.assignee || 'Все'}
                           </span>
                         ) : (
-                          client && (
-                            <button 
-                              onClick={() => { setSelectedClientId(client.id); setActiveTab('clients'); }}
-                              class="text-xs bg-indigo-50 text-indigo-600 font-medium px-2.5 py-1 rounded-full hover:bg-indigo-100">
-                              👤 {client.name}
-                            </button>
-                          )
+                          <>
+                            {client && (
+                              <button onClick={() => { setSelectedClientId(client.id); setActiveTab('clients'); }} class="text-xs bg-indigo-50 text-indigo-600 font-medium px-2.5 py-1 rounded-lg hover:bg-indigo-100">
+                                👤 {client.name}
+                              </button>
+                            )}
+                            <span class="text-xs bg-slate-100 text-slate-700 font-medium px-2 py-1 rounded-lg">
+                              Отв: {task.assignee || 'Все'}
+                            </span>
+                          </>
                         )}
                       </div>
                     </div>
                   );
                 })}
               </div>
-
             </div>
           )}
 
-          {/* Футер с бэкапом */}
+          {/* ВКЛАДКА: КОМАНДА */}
+          {activeTab === 'team' && (
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {team.map(member => (
+                <div key={member.id} class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                  <div class="flex items-start gap-4">
+                    <img 
+                      src={member.photo} 
+                      alt={member.name} 
+                      class="w-16 h-16 rounded-2xl object-cover border border-slate-200 bg-slate-100 shadow-inner"
+                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'; }}
+                    />
+                    <div class="flex-1">
+                      <h3 class="text-base font-bold text-slate-900">{member.name}</h3>
+                      <p class="text-xs text-indigo-600 font-medium mt-0.5">{member.role}</p>
+                      <span class="inline-block mt-2 text-[11px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
+                        {member.department}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 pt-4 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
+                    <div class="flex justify-between">
+                      <span class="text-slate-400">Телефон:</span>
+                      <a href={`tel:${member.phone}`} class="font-medium text-slate-800 hover:text-indigo-600">{member.phone || '—'}</a>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-400">Город рождения:</span>
+                      <span class="font-medium text-slate-800">{member.birthCity || '—'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-slate-400">Дата рождения:</span>
+                      <span class="font-medium text-slate-800">{member.birthDate || '—'}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Футер */}
           <footer class="mt-auto pt-8 pb-4 flex justify-between items-center text-xs text-slate-400">
-            <div>MiniCRM • Локальное хранилище данных</div>
-            <button 
-              onClick={exportData} 
-              class="flex items-center gap-1 hover:text-indigo-600 font-semibold cursor-pointer">
+            <div>69CRM • Локальное хранилище данных</div>
+            <button onClick={exportData} class="flex items-center gap-1 hover:text-indigo-600 font-semibold cursor-pointer">
               📥 Экспорт бэкапа (JSON)
             </button>
           </footer>
 
-          {/* Модальное окно: Новый клиент */}
+          {/* Модалка: Новый клиент */}
           {showNewClientModal && (
             <div class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
               <div class="bg-white w-full max-w-md p-6 rounded-3xl shadow-xl border border-slate-100">
@@ -483,55 +578,42 @@
                   <button onClick={() => setShowNewClientModal(false)} class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
                 </div>
                 <form onSubmit={handleAddClient} class="space-y-3">
-                  <div>
-                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Имя / Компания *</label>
-                    <input 
-                      required 
-                      value={newClientName} 
-                      onChange={e => setNewClientName(e.target.value)} 
-                      class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-indigo-500" 
-                      placeholder="ИП Смирнов или Алина" 
-                    />
-                  </div>
-                  <div>
-                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Телефон / Telegram</label>
-                    <input 
-                      value={newClientPhone} 
-                      onChange={e => setNewClientPhone(e.target.value)} 
-                      class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-indigo-500" 
-                      placeholder="+7 999 000-00-00" 
-                    />
-                  </div>
-                  <div>
-                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Email</label>
-                    <input 
-                      value={newClientEmail} 
-                      onChange={e => setNewClientEmail(e.target.value)} 
-                      class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-indigo-500" 
-                      placeholder="client@mail.ru" 
-                    />
-                  </div>
-                  <div>
-                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Начальный статус</label>
-                    <select 
-                      value={newClientStatus} 
-                      onChange={e => setNewClientStatus(e.target.value)} 
-                      class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:border-indigo-500">
-                      {CLIENT_STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
-                    </select>
-                  </div>
+                  <input required value={newClientName} onChange={e => setNewClientName(e.target.value)} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="Имя / Компания *" />
+                  <input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="+7 999 000-00-00" />
+                  <input value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="client@mail.ru" />
+                  <select value={newClientStatus} onChange={e => setNewClientStatus(e.target.value)} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm">
+                    {CLIENT_STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
+                  </select>
                   <div class="flex gap-2 pt-2">
-                    <button 
-                      type="button" 
-                      onClick={() => setShowNewClientModal(false)} 
-                      class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-semibold transition">
-                      Отмена
-                    </button>
-                    <button 
-                      type="submit" 
-                      class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-semibold transition shadow-sm">
-                      Создать
-                    </button>
+                    <button type="button" onClick={() => setShowNewClientModal(false)} class="flex-1 bg-slate-100 py-2.5 rounded-xl text-sm font-semibold">Отмена</button>
+                    <button type="submit" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold">Создать</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Модалка: Новый сотрудник */}
+          {showNewMemberModal && (
+            <div class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+              <div class="bg-white w-full max-w-md p-6 rounded-3xl shadow-xl border border-slate-100">
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-lg font-bold text-slate-900">Новый сотрудник</h3>
+                  <button onClick={() => setShowNewMemberModal(false)} class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+                </div>
+                <form onSubmit={handleAddMember} class="space-y-3">
+                  <input required value={newMember.name} onChange={e => setNewMember({...newMember, name: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="ФИО / Имя *" />
+                  <input required value={newMember.role} onChange={e => setNewMember({...newMember, role: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="Должность *" />
+                  <select value={newMember.department} onChange={e => setNewMember({...newMember, department: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm">
+                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <input value={newMember.phone} onChange={e => setNewMember({...newMember, phone: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="Телефон" />
+                  <input value={newMember.birthCity} onChange={e => setNewMember({...newMember, birthCity: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="Город рождения" />
+                  <input type="date" value={newMember.birthDate} onChange={e => setNewMember({...newMember, birthDate: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" />
+                  <input value={newMember.photo} onChange={e => setNewMember({...newMember, photo: e.target.value})} class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm" placeholder="URL ссылки на фото" />
+                  <div class="flex gap-2 pt-2">
+                    <button type="button" onClick={() => setShowNewMemberModal(false)} class="flex-1 bg-slate-100 py-2.5 rounded-xl text-sm font-semibold">Отмена</button>
+                    <button type="submit" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold">Добавить</button>
                   </div>
                 </form>
               </div>
